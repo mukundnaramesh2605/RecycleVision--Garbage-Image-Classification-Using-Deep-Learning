@@ -24,7 +24,7 @@ A deep learning project that classifies photos of waste into **12 categories** s
 12. [Streamlit App](#streamlit-app)
 13. [Getting Started](#getting-started)
 14. [Reproducing the Experiments](#reproducing-the-experiments)
-15. [Real-World Test Images](#real-world-test-images)
+15. [Real-World Evaluation](#real-world-evaluation)
 16. [Limitations & Future Work](#limitations--future-work)
 17. [Tech Stack](#tech-stack)
 
@@ -359,16 +359,50 @@ The split is fixed with `seed=42`, so the train, validation and test partitions 
 
 ---
 
-## Real-World Test Images
+## Real-World Evaluation
 
-Kaggle images tend to be clean and well lit. To check how the model copes outside that setting, [download_real_world_dataset.py](download_real_world_dataset.py) scrapes **10 images per class from Bing** into `real_world_test/`, using descriptive search terms (for example *"rotten fruit vegetable"* for `biological` and *"metal can"* for `metal`).
+Kaggle images are clean and well lit. To test how the model holds up outside that setting, `download_real_world_dataset.py` scrapes 10 images per class from Bing into `real_world_test/` (120 images total), using descriptive search terms such as "rotten fruit vegetable" for `biological` and "metal can" for `metal`.
 
 ```bash
 pip install icrawler
 python download_real_world_dataset.py
 ```
 
-The same 120 images are copied into `sample_images/`, where the Streamlit app offers them in its **Use a sample image** mode for a quick qualitative check. The scraped images have not been manually verified, so a few may be mislabelled or irrelevant.
+The deployed ResNet50 was then scored on all 120 images (same preprocessing as the test set, no augmentation).
+
+### Result: 97.4% clean test vs 77.5% real-world
+
+| Metric | Kaggle test set | Real-world images |
+|---|---:|---:|
+| Accuracy | 97.38% | 77.50% |
+| Macro F1 | 0.9683 | 0.7380 |
+| Images | 2,328 | 120 |
+
+### Per-class results (real-world)
+
+| Class | Precision | Recall | F1 | Support |
+|---|---:|---:|---:|---:|
+| battery | 0.692 | 0.900 | 0.783 | 10 |
+| biological | 1.000 | 1.000 | 1.000 | 10 |
+| brown-glass | 0.909 | 1.000 | 0.952 | 10 |
+| cardboard | 0.556 | 1.000 | 0.714 | 10 |
+| clothes | 0.700 | 0.700 | 0.700 | 10 |
+| green-glass | 1.000 | 1.000 | 1.000 | 10 |
+| metal | 0.909 | 1.000 | 0.952 | 10 |
+| paper | 0.125 | 0.100 | 0.111 | 10 |
+| plastic | 0.750 | 0.900 | 0.818 | 10 |
+| shoes | 1.000 | 1.000 | 1.000 | 10 |
+| trash | 0.000 | 0.000 | 0.000 | 10 |
+| white-glass | 1.000 | 0.700 | 0.824 | 10 |
+| **Macro avg** | **0.720** | **0.775** | **0.738** | 120 |
+
+### What this shows
+
+- **Distinct objects transfer well.** `biological`, `green-glass` and `shoes` stay at a perfect 1.000, and `metal` and `brown-glass` hold above 0.95. Items with a clear shape or texture survive the jump to messy web photos.
+- **Ambiguous categories collapse.** `trash` scores 0.000 (never predicted once) and `paper` scores 0.111. This has two causes: a genuine **domain gap** (the model was trained on clean, single-object images and degrades on cluttered scenes), and a **data-collection artifact** (the "trash" web query returned scene-level images of bins and landfills, which look nothing like the single-item Kaggle `trash` class). The model, being a single-object classifier, latches onto one object in these scenes and misclassifies them, which also drags down `cardboard` precision (0.556) as a common wrong bucket.
+- **The scraped labels are not manually verified**, so a few images may be mislabelled or irrelevant, and 10 per class is small. Treat 77.5% as indicative, not precise.
+
+This gap is the honest picture of deployment readiness: strong on clear single items, weaker on cluttered real-world scenes, which points directly to the future work below (object detection for mixed waste, and training data closer to the deployment setting).
 
 ---
 
@@ -379,7 +413,6 @@ The same 120 images are copied into `sample_images/`, where the Streamlit app of
 - **Single-label only**: each image gets one class. Mixed waste would need object detection, for example YOLO.
 
 Ideas for future work:
-- Add a quantitative evaluation on `real_world_test/`.
 - Try EfficientNet or ConvNeXt backbones, and add learning-rate scheduling and early stopping.
 - Add Grad-CAM visualisations to the app so users can see what the model looks at.
 - Show a top-3 view in the app, plus a low-confidence "not sure" state.
