@@ -181,7 +181,7 @@ Class weights are computed with `sklearn.utils.class_weight.compute_class_weight
 - **Sample grid**: one example image from each of the 12 classes.
 - **Image size analysis**: min, max and mean width and height over a random sample, which confirmed that resizing is needed.
 - **Pipeline sanity check**: loads the dataloaders and prints the class names, batch counts and computed class weights.
-
+- **Colour analysis**: overall R/G/B pixel-intensity distribution and mean RGB per class, which shows distinct colour signatures (for example green-glass is green-dominant).
 ---
 
 ## Models
