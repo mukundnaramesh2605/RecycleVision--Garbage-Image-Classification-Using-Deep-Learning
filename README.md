@@ -120,6 +120,7 @@ dataset/garbage_classification/
 │   └── metrics/                      # Training histories (JSON) and final comparison
 │
 ├── real_world_test/                  # 120 web-scraped images (10 per class)
+├── sample_images/                    # Copy of real_world_test/, offered as samples in the app
 └── dataset/garbage_classification/   # Kaggle dataset (12 class folders)
 ```
 
@@ -277,15 +278,25 @@ Full epoch-by-epoch histories are saved in [reports/metrics/](reports/metrics/).
 
 ## Streamlit App
 
-[app.py](app.py) is a lightweight web interface around the fine-tuned ResNet50:
+[app.py](app.py) is a lightweight web interface around the fine-tuned ResNet50. You can try it live at the [hosted app](https://recyclevision-garbage-image-classification-using-deep-learning.streamlit.app/).
 
-1. Upload a `.jpg`, `.jpeg` or `.png` image.
+**How it works**
+
+1. **Choose an input mode** with the radio button:
+   - **Upload an image**: upload your own `.jpg`, `.jpeg` or `.png` file.
+   - **Use a sample image**: pick one of the 120 bundled images in [sample_images/](sample_images/) (10 per class, organised as `<class>/<file>.jpg`) from a dropdown. You don't need an image of your own to try the model.
 2. The image is resized to 224×224 and normalized with ImageNet statistics, the same preprocessing used at evaluation time.
 3. The app shows:
+   - the selected image
    - the **predicted class** and its **confidence**
    - a **ranked probability bar** for all 12 classes
 
-The model is loaded once and cached with `@st.cache_resource`, and inference runs on the CPU, so no GPU is needed.
+The page header also has a **🔗 Link to GitHub repository** button that opens this repo.
+
+**Implementation notes**
+- The model is loaded once and cached with `@st.cache_resource`, and inference runs on the CPU, so no GPU is needed.
+- The sample dropdown lists every `.jpg`, `.jpeg` and `.png` under `sample_images/` recursively. To change the samples, add or remove files and redeploy. If the folder is empty, the app shows a warning instead of failing.
+- Both input modes go through the same `show_results()` function, so predictions are displayed the same way.
 
 ---
 
@@ -325,7 +336,7 @@ On Apple Silicon, the standard PyTorch wheel includes `mps` GPU support, which t
 ```bash
 streamlit run app.py
 ```
-Then open http://localhost:8501 and upload an image.
+Then open http://localhost:8501 and either upload an image or pick one from the bundled samples. Start the app from the project root, because `models/resnet50.pt` and `sample_images/` are loaded with relative paths.
 
 ---
 
@@ -357,7 +368,7 @@ pip install icrawler
 python download_real_world_dataset.py
 ```
 
-You can upload these images to the Streamlit app for a quick qualitative check. The scraped images have not been manually verified, so a few may be mislabelled or irrelevant.
+The same 120 images are copied into `sample_images/`, where the Streamlit app offers them in its **Use a sample image** mode for a quick qualitative check. The scraped images have not been manually verified, so a few may be mislabelled or irrelevant.
 
 ---
 
