@@ -11,6 +11,7 @@ CLASS_NAMES = ['battery', 'biological', 'brown-glass', 'cardboard', 'clothes',
                'green-glass', 'metal', 'paper', 'plastic', 'shoes', 'trash', 'white-glass']
 MODEL_PATH = "models/resnet50.pt"
 SAMPLE_DIR = "sample_images"
+REPO_URL = "https://github.com/mukundnaramesh2605/RecycleVision--Garbage-Image-Classification-Using-Deep-Learning"
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD  = [0.229, 0.224, 0.225]
 
@@ -49,25 +50,59 @@ def show_results(image):
         st.write(f"{CLASS_NAMES[i]} — {probs[i]*100:.1f}%")
         st.progress(float(probs[i]))
 
-# ---------- ui ----------
+# ---------- header ----------
 st.title("♻️ RecycleVision")
-st.caption("Garbage image classifier · ResNet50 · 12 classes · 97.4% test accuracy")
-st.link_button("🔗 Link to GitHub repository", url="https://github.com/mukundnaramesh2605/RecycleVision--Garbage-Image-Classification-Using-Deep-Learning")
+st.caption("Garbage image classifier · ResNet50 · 12 classes")
 
-mode = st.radio("Choose input:", ["Upload an image", "Use a sample image"])
+tab_about, tab_classify = st.tabs(["🏠 About", "🔍 Classify"])
 
-if mode == "Upload an image":
-    file = st.file_uploader("Upload a garbage image", type=["jpg", "jpeg", "png"])
-    if file:
-        show_results(Image.open(file).convert("RGB"))
+# ---------- About tab ----------
+with tab_about:
+    st.header("About RecycleVision")
+    st.write(
+        "RecycleVision classifies a photo of a waste item into one of 12 categories to help "
+        "automate recycling. It is built with transfer learning in PyTorch and serves a "
+        "fine-tuned ResNet50 that reaches **97.4% accuracy** on the held-out test set."
+    )
+
+    st.subheader("The 12 categories")
+    cols = st.columns(3)
+    for i, name in enumerate(CLASS_NAMES):
+        cols[i % 3].write(f"- {name}")
+
+    st.subheader("How it works")
+    st.write(
+        "- Three models were compared: a CNN from scratch, MobileNetV2, and ResNet50.\n"
+        "- ResNet50 scored highest (97.4% accuracy, 0.968 macro-F1) and is the deployed model.\n"
+        "- Your image is resized to 224×224 and normalized the same way as during training, "
+        "then the model returns a probability for each of the 12 classes."
+    )
+
+    st.subheader("How to use it")
+    st.write(
+        "Open the **🔍 Classify** tab, then either upload your own image or pick a bundled "
+        "sample. The app shows the predicted category, its confidence, and the full ranking."
+    )
+
+    st.link_button("🔗 View project on GitHub", REPO_URL)
+
+# ---------- Classify tab ----------
+with tab_classify:
+    st.header("Classify an image")
+    mode = st.radio("Choose input:", ["Upload an image", "Use a sample image"])
+
+    if mode == "Upload an image":
+        file = st.file_uploader("Upload a garbage image", type=["jpg", "jpeg", "png"])
+        if file:
+            show_results(Image.open(file).convert("RGB"))
+        else:
+            st.info("Upload an image to classify it.")
     else:
-        st.info("Upload an image to classify it.")
-else:
-    samples = sorted(glob.glob(os.path.join(SAMPLE_DIR, "**", "*.*"), recursive=True))
-    samples = [s for s in samples if s.lower().endswith((".jpg", ".jpeg", ".png"))]
-    if not samples:
-        st.warning(f"No images found in '{SAMPLE_DIR}/'. Add some and redeploy.")
-    else:
-        labels = [os.path.relpath(s, SAMPLE_DIR) for s in samples]
-        choice = st.selectbox("Pick a sample image:", labels)
-        show_results(Image.open(os.path.join(SAMPLE_DIR, choice)).convert("RGB"))
+        samples = sorted(glob.glob(os.path.join(SAMPLE_DIR, "**", "*.*"), recursive=True))
+        samples = [s for s in samples if s.lower().endswith((".jpg", ".jpeg", ".png"))]
+        if not samples:
+            st.warning(f"No images found in '{SAMPLE_DIR}/'.")
+        else:
+            labels = [os.path.relpath(s, SAMPLE_DIR) for s in samples]
+            choice = st.selectbox("Pick a sample image:", labels)
+            show_results(Image.open(os.path.join(SAMPLE_DIR, choice)).convert("RGB"))
