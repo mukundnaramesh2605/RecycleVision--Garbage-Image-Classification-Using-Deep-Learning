@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 import streamlit as st
 from torchvision import models, transforms
+import pandas as pd
 
 CLASS_NAMES = ['battery', 'biological', 'brown-glass', 'cardboard', 'clothes',
                'green-glass', 'metal', 'paper', 'plastic', 'shoes', 'trash', 'white-glass']
@@ -85,6 +86,14 @@ with tab_about:
     )
 
     st.link_button("🔗 View project on GitHub", REPO_URL)
+    st.subheader("Model comparison (test set)")
+    comparison = pd.DataFrame([
+        ["Baseline CNN (from scratch)", "78.05%", "0.7354", "0.7801", "~0.62 M", "2.5 MB"],
+        ["MobileNetV2 (fine-tuned)",    "95.96%", "0.9453", "0.9595", "~2.2 M",  "9.2 MB"],
+        ["ResNet50 (fine-tuned) ✅",    "97.38%", "0.9683", "0.9738", "~23.5 M", "94 MB"],
+    ], columns=["Model", "Test accuracy", "Macro F1", "Weighted F1", "Parameters", "Weights"])
+    st.dataframe(comparison, hide_index=True, use_container_width=True)
+    st.caption("ResNet50 is the deployed model (highest macro-F1). MobileNetV2 is within ~1.4 points at a tenth of the size.")
 
 # ---------- Classify tab ----------
 with tab_classify:
